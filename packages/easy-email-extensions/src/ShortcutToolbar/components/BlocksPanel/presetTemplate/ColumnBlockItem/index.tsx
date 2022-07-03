@@ -1,5 +1,5 @@
 import React from 'react';
-import { BasicType } from 'easy-email-core';
+import { AdvancedType } from 'easy-email-core';
 import { Stack } from 'easy-email-editor';
 
 import { BlockMaskWrapper } from '@extensions/ShortcutToolbar/components/BlockMaskWrapper';
@@ -14,7 +14,7 @@ export function ColumnBlockItem() {
           return (
             <BlockMaskWrapper
               key={index}
-              type={BasicType.COLUMN}
+              type={AdvancedType.COLUMN}
               payload={item.payload}
             >
               <div style={{ position: 'relative' }}>
@@ -42,7 +42,7 @@ const list = [
   {
     thumbnail: getImg('IMAGE_20'),
     payload: {
-      type: 'column',
+      type: 'advanced_column',
       data: {
         value: {},
       },

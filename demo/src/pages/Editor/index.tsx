@@ -7,7 +7,7 @@ import { useLoading } from '@demo/hooks/useLoading';
 import { Button, Message, PageHeader, Select } from '@arco-design/web-react';
 import { useQuery } from '@demo/hooks/useQuery';
 import { useHistory } from 'react-router-dom';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, set, isEqual } from 'lodash';
 import { Loading } from '@demo/components/loading';
 import mjml from 'mjml-browser';
 import { copy } from '@demo/utils/clipboard';
@@ -18,7 +18,7 @@ import {
   IconMoonFill,
   IconSunFill,
 } from '@arco-design/web-react/icon';
-
+import { Liquid } from 'liquidjs';
 import {
   EmailEditor,
   EmailEditorProvider,
@@ -32,8 +32,13 @@ import { FormApi } from 'final-form';
 import { UserStorage } from '@demo/utils/user-storage';
 
 import { useCollection } from './components/useCollection';
-import mustache from 'mustache';
-import { JsonToMjml } from 'easy-email-core';
+import {
+  AdvancedType,
+  BasicType,
+  getPageIdx,
+  IBlockData,
+  JsonToMjml,
+} from 'easy-email-core';
 import { BlockMarketManager, SimpleLayout } from 'easy-email-extensions';
 import { AutoSaveAndRestoreEmail } from '@demo/components/AutoSaveAndRestoreEmail';
 
@@ -46,7 +51,9 @@ import blueTheme from '@arco-themes/react-easy-email-theme/css/arco.css?inline';
 import purpleTheme from '@arco-themes/react-easy-email-theme-purple/css/arco.css?inline';
 import greenTheme from '@arco-themes/react-easy-email-theme-green/css/arco.css?inline';
 import { useState } from 'react';
-import { testMergeTags as mergeTags } from './testMergeTags';
+import { testMergeTags } from './testMergeTags';
+import { useMergeTagsModal } from './components/useMergeTagsModal';
+import { getTemplate } from '@demo/config/getTemplate';
 
 const imageCompression = import('browser-image-compression');
 
@@ -71,7 +78,7 @@ const fontList = [
 
 export default function Editor() {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [theme, setTheme] = useState<'blue' | 'green' | 'purple'>('purple');
+  const [theme, setTheme] = useState<'blue' | 'green' | 'purple'>('blue');
   const dispatch = useDispatch();
   const history = useHistory();
   const templateData = useAppSelector('template');
@@ -80,6 +87,7 @@ export default function Editor() {
   const { openModal, modal } = useEmailModal();
   const { id, userId } = useQuery();
   const loading = useLoading(template.loadings.fetchById);
+  const { modal: mergeTagsModal, openModal: openMergeTagsModal, mergeTags, setMergeTags } = useMergeTagsModal(testMergeTags);
 
   const isSubmitting = useLoading([
     template.loadings.create,
@@ -136,6 +144,57 @@ export default function Editor() {
     setTheme(t);
   }, []);
 
+  const onChangeMergeTag = useCallback((path: string, val: any) => {
+    setMergeTags((old) => {
+      const newObj = cloneDeep(old);
+      set(newObj, path, val);
+      return newObj;
+    });
+  }, []);
+
+
+  const onExportHtml = (values: IEmailTemplate) => {
+    pushEvent({ name: 'ExportHtml' });
+    const html = mjml(
+      JsonToMjml({
+        data: values.content,
+        mode: 'production',
+        context: values.content,
+        dataSource: mergeTags,
+      }),
+      {
+        beautify: true,
+        validationLevel: 'soft',
+      }
+    ).html;
+
+    copy(html);
+    Message.success('Copied to pasteboard!');
+  };
+
+  const onExportMJML = (values: IEmailTemplate) => {
+    pushEvent({ name: 'ExportMJML' });
+    const html = JsonToMjml({
+      data: values.content,
+      mode: 'production',
+      context: values.content,
+      dataSource: mergeTags,
+    });
+
+    copy(html);
+    Message.success('Copied to pasteboard!');
+  };
+
+  const initialValues: IEmailTemplate | null = useMemo(() => {
+    if (!templateData) return null;
+    const sourceData = cloneDeep(templateData.content) as IBlockData;
+    return {
+      ...templateData,
+      content: sourceData, // replace standard block
+    };
+  }, [templateData]);
+
+
   const onSubmit = useCallback(
     async (
       values: IEmailTemplate,
@@ -143,6 +202,13 @@ export default function Editor() {
     ) => {
       pushEvent({ name: 'Save' });
       if (id) {
+        const isChanged = !(isEqual(initialValues?.content, values.content) && isEqual(initialValues?.subTitle, values?.subTitle) && isEqual(initialValues?.subject, values?.subject));
+
+        if (!isChanged) {
+          Message.success('Updated success!');
+          form.restart(values);
+          return;
+        }
         dispatch(
           template.actions.updateById({
             id: +id,
@@ -166,39 +232,14 @@ export default function Editor() {
         );
       }
     },
-    [dispatch, history, id]
+    [dispatch, history, id, initialValues]
   );
-
-  const onExportHtml = (values: IEmailTemplate) => {
-    pushEvent({ name: 'ExportHtml' });
-    const html = mjml(
-      JsonToMjml({
-        data: values.content,
-        mode: 'production',
-        context: values.content,
-        dataSource: mergeTags,
-      }),
-      {
-        beautify: true,
-        validationLevel: 'soft',
-      }
-    ).html;
-
-    copy(html);
-    Message.success('Copied to pasteboard!');
-  };
-
-  const initialValues: IEmailTemplate | null = useMemo(() => {
-    if (!templateData) return null;
-    return {
-      ...templateData,
-      content: cloneDeep(templateData.content), // because redux object is not extensible
-    };
-  }, [templateData]);
 
   const onBeforePreview: EmailEditorProviderProps['onBeforePreview'] =
     useCallback((html: string, mergeTags) => {
-      return mustache.render(html, mergeTags);
+      const engine = new Liquid();
+      const tpl = engine.parse(html);
+      return engine.renderSync(tpl, mergeTags);
     }, []);
 
   const themeStyleText = useMemo(() => {
@@ -228,12 +269,15 @@ export default function Editor() {
         //   hoverColor: '#78A349',
         //   selectedColor: '#1890ff',
         // }}
-        onAddCollection={addCollection}
-        onRemoveCollection={({ id }) => removeCollection(id)}
+        // onAddCollection={addCollection}
+        // onRemoveCollection={({ id }) => removeCollection(id)}
         onUploadImage={onUploadImage}
         fontList={fontList}
         onSubmit={onSubmit}
+        onChangeMergeTag={onChangeMergeTag}
         autoComplete
+        enabledLogic
+        // enabledMergeTagsBadge
         dashed={false}
         mergeTags={mergeTags}
         mergeTagGenerate={(tag) => `{{${tag}}}`}
@@ -262,9 +306,19 @@ export default function Editor() {
                       <Select.Option value='purple'>Purple</Select.Option>
                     </Select>
 
+
+                    <Button onClick={openMergeTagsModal}>
+                      Update mergeTags
+                    </Button>
+
+                    <Button onClick={() => onExportMJML(values)}>
+                      Export MJML
+                    </Button>
+
                     <Button onClick={() => onExportHtml(values)}>
                       Export html
                     </Button>
+
                     <Button onClick={() => openModal(values, mergeTags)}>
                       Send test email
                     </Button>
@@ -305,6 +359,31 @@ export default function Editor() {
         }}
       </EmailEditorProvider>
       {modal}
+      {mergeTagsModal}
     </div>
   );
+}
+
+function replaceStandardBlockToAdvancedBlock(blockData: IBlockData) {
+  const map = {
+    [BasicType.TEXT]: AdvancedType.TEXT,
+    [BasicType.BUTTON]: AdvancedType.BUTTON,
+    [BasicType.IMAGE]: AdvancedType.IMAGE,
+    [BasicType.DIVIDER]: AdvancedType.DIVIDER,
+    [BasicType.SPACER]: AdvancedType.SPACER,
+    [BasicType.SOCIAL]: AdvancedType.SOCIAL,
+    [BasicType.ACCORDION]: AdvancedType.ACCORDION,
+    [BasicType.CAROUSEL]: AdvancedType.CAROUSEL,
+    [BasicType.NAVBAR]: AdvancedType.NAVBAR,
+    [BasicType.WRAPPER]: AdvancedType.WRAPPER,
+    [BasicType.SECTION]: AdvancedType.SECTION,
+    [BasicType.GROUP]: AdvancedType.GROUP,
+    [BasicType.COLUMN]: AdvancedType.COLUMN,
+  };
+
+  if (map[blockData.type]) {
+    blockData.type = map[blockData.type];
+  }
+  blockData.children.forEach(replaceStandardBlockToAdvancedBlock);
+  return blockData;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BasicType } from 'easy-email-core';
+import { AdvancedType } from 'easy-email-core';
 import { Stack } from 'easy-email-editor';
 
 import { BlockMaskWrapper } from '@extensions/ShortcutToolbar/components/BlockMaskWrapper';
@@ -14,7 +14,7 @@ export function WrapperBlockItem() {
           return (
             <BlockMaskWrapper
               key={index}
-              type={BasicType.WRAPPER}
+              type={AdvancedType.WRAPPER}
               payload={item.payload}
             >
               <div style={{ position: 'relative' }}>
@@ -46,7 +46,7 @@ const list = [
   {
     thumbnail: getImg('IMAGE_57'),
     payload: {
-      type: 'wrapper',
+      type: 'advanced_section',
       data: {
         value: {},
       },
@@ -59,7 +59,7 @@ const list = [
       },
       children: [
         {
-          type: 'section',
+          type: 'advanced_section',
           data: {
             value: {
               noWrap: false,
@@ -79,7 +79,7 @@ const list = [
           },
           children: [
             {
-              type: 'column',
+              type: 'advanced_column',
               data: {
                 value: {},
               },
@@ -107,7 +107,7 @@ const list = [
           ],
         },
         {
-          type: 'section',
+          type: 'advanced_section',
           data: {
             value: {
               noWrap: false,
@@ -127,7 +127,7 @@ const list = [
           },
           children: [
             {
-              type: 'column',
+              type: 'advanced_column',
               data: {
                 value: {},
               },

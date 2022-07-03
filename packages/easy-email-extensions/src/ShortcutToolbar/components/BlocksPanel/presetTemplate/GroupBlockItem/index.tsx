@@ -1,5 +1,5 @@
 import React from 'react';
-import { BasicType } from 'easy-email-core';
+import { AdvancedType } from 'easy-email-core';
 import { Stack } from 'easy-email-editor';
 
 import { BlockMaskWrapper } from '@extensions/ShortcutToolbar/components/BlockMaskWrapper';
@@ -14,7 +14,7 @@ export function GroupBlockItem() {
           return (
             <BlockMaskWrapper
               key={index}
-              type={BasicType.GROUP}
+              type={AdvancedType.GROUP}
               payload={item.payload}
             >
               <div style={{ position: 'relative' }}>
@@ -46,7 +46,7 @@ const list = [
   {
     thumbnail: getImg('IMAGE_23'),
     payload: {
-      type: 'group',
+      type: 'advanced_group',
       data: {
         value: {},
       },
@@ -56,7 +56,7 @@ const list = [
       },
       children: [
         {
-          type: 'column',
+          type: 'advanced_column',
           data: {
             value: {},
           },
@@ -83,7 +83,7 @@ const list = [
           ],
         },
         {
-          type: 'column',
+          type: 'advanced_column',
           data: {
             value: {},
           },
@@ -115,7 +115,7 @@ const list = [
   {
     thumbnail: getImg('IMAGE_26'),
     payload: {
-      type: 'group',
+      type: 'advanced_group',
       data: {
         value: {},
       },
@@ -126,7 +126,7 @@ const list = [
       },
       children: [
         {
-          type: 'column',
+          type: 'advanced_column',
           data: {
             value: {},
           },
@@ -168,7 +168,7 @@ const list = [
           ],
         },
         {
-          type: 'column',
+          type: 'advanced_column',
           data: {
             value: {},
           },
@@ -210,7 +210,7 @@ const list = [
           ],
         },
         {
-          type: 'column',
+          type: 'advanced_column',
           data: {
             value: {},
           },

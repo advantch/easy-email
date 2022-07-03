@@ -1,5 +1,5 @@
 import { BlockManager } from '@core/utils';
-import { IPage } from '@core/blocks/Page';
+import { IPage } from '@core/blocks';
 import { BasicType } from '@core/constants';
 import { IBlockData } from '@core/typings';
 import { identity, isString, pickBy } from 'lodash';
@@ -185,7 +185,7 @@ function formatPadding(
       const formatKey = new RegExp(`^${attributeName}(.*)`).exec(key)?.[0];
 
       if (formatKey) {
-        ele.style[formatKey as any] = attributes[key];
+        ele.style.padding = attributes[key];
         delete attributes[key];
       }
     }
