@@ -29,7 +29,7 @@ export function useEmailModal() {
   const onSendEmail = useCallback(
     async (values: { toEmail: string; mergeTags: string; }) => {
       if (!emailData) return null;
-      pushEvent({ action: 'SendTestEmail', name: values.toEmail });
+      pushEvent({ name: 'SendTestEmail', payload: { email: values.toEmail, } });
       let mergeTagsPayload = {};
       try {
         mergeTagsPayload = JSON.parse(values.mergeTags);
@@ -94,6 +94,7 @@ export function useEmailModal() {
             style={{ zIndex: 9999 }}
             title='Send test email'
             okText='Send'
+            cancelText='Cancel'
             visible={visible}
             confirmLoading={emailSendLoading}
             onOk={() => handleSubmit()}
